@@ -1,8 +1,10 @@
 module Kpedu.Render (render) where
 
 import Kpedu.State
+import Kpedu.Buffer
 import System.Console.ANSI
 import Control.Monad
+import qualified Data.Text as T
 
 render :: KpeduState -> IO ()
 render st = do
@@ -12,7 +14,7 @@ render st = do
       clearScreen
       lineNumbers 0 h
       modeLine h w
-      setCursorPosition (row st) (col st + 2)
+      bufferContent (buffer st)
     Nothing -> return ()
 
 modeLine :: Int -> Int -> IO ()
@@ -31,3 +33,21 @@ lineNumbers n h
   | otherwise = do
       putStrLn . show $ n
       lineNumbers (n+1) h
+
+bufferContent :: Buffer -> IO ()
+bufferContent (Buffer (xs,ys) col) = do
+  setCursorPosition 0 0
+  forM_ (reverse xs)
+    (\line -> do setCursorColumn 2
+                 putStrLn . T.unpack $ line)
+  forM_ (ys)
+    (\line -> do setCursorColumn 2
+                 putStrLn . T.unpack $ line )
+  -- Cursor
+  setSGR [SetColor Background Dull White]
+  setCursorPosition (length xs) (col+2)
+  putStr " "
+  setSGR [Reset]
+
+  print (Buffer (xs,ys) col)
+  --setCursorPosition (col st) (col st + 2)

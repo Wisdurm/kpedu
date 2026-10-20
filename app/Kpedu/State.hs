@@ -1,10 +1,10 @@
 module Kpedu.State where
 
-data KpeduState = KpeduState {  row :: Int
-                             ,  col :: Int
+import Kpedu.Buffer
+
+data KpeduState = KpeduState {  buffer :: Buffer
                              }
 
 defaultState :: KpeduState
-defaultState = KpeduState {  row = 0
-                          ,  col = 0
+defaultState = KpeduState {  buffer = initBuffer "Hello\nWorld!"
                           }

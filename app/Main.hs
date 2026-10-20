@@ -12,9 +12,10 @@ main = do
   stdoutSupportsANSI <- hNowSupportsANSI stdout
   if stdoutSupportsANSI then do
     setTitle "Kpedu"
+    hideCursor
     useAlternateScreenBuffer
     loop defaultState `catch`
-      (\(_ :: SomeException) -> useNormalScreenBuffer)
+      (\(_ :: SomeException) -> useNormalScreenBuffer >> showCursor)
     else
     putStrLn "Cout does not support ANSI escape codes."
 

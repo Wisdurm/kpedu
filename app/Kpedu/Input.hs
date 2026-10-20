@@ -1,13 +1,15 @@
 module Kpedu.Input where
 
 import Kpedu.State
+import Kpedu.Buffer
 
 input :: KpeduState -> IO KpeduState
 input st = do
   input <- getChar
   case input of
-    'h' -> return st { col = max 0 (col st - 1) }
-    'l' -> return st { col = col st + 1 }
-    'j' -> return st { row = row st + 1 }
-    'k' -> return st { row = max 0 (row st - 1) }
-    _ -> return st
+    'd' -> return st { buffer = deleteChar (buffer st) }
+    'h' -> return st { buffer = colBack (buffer st) }
+    'l' -> return st { buffer = colForward (buffer st) }
+    'k' -> return st { buffer = lineUp (buffer st) }
+    'j' -> return st { buffer = lineDown (buffer st) }
+    _ -> return st { buffer = insertChar (buffer st) input}
