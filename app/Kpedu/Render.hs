@@ -6,6 +6,19 @@ import System.Console.ANSI
 import Control.Monad
 import qualified Data.Text as T
 
+lineOffset :: Int
+lineOffset = 2
+
+logo :: String
+logo = "\
+\  █▀▓   ▒▄  █▀▀▀▀▀▀▄   ▄▀▀▀▀▀▄  █▀▀▀▀▀▀▄  █▀▒   ▓▄\n\
+\▓ ░   ░ ▒ ▓ ░▀▀▀▄ ▓ ▓ ▄▀▀▀▄ ▒ ▓ ▒▀▀▀▄ ▓ ▓ ░   ░ ▓\n\
+\▒ ▒  ▄▀ ░ ▒ ▒   ░ ░ ▒ ▓▄▄ ░▄░ ▒ ▓   ░ ▒ ▒ ▒   ░ ▒\n\
+\▒ ▀▀▀ ▄▀  ░ ▓▒░░█▄▀ ▒ ░▒▒▌    ░ ░   ░ ░ ░ ░   ▒ ░\n\
+\█ █▀▀▄ ▀▄ ▓ ░▀▀▀▀   █ ▓   ▓▀▓ █ ▒   ▓ ▒ █ █   ▓ ▓\n\
+\█ █   ▒ ▒ ▒ ▒       █ ▀▄▄▄▀ ░ █ ▓▄▄▄▀ ░ █ ▀▄▄▄▀ ░\n\
+\█▀    ▀▄░ ░▄▓        ▀▄▄▄▄▄▀  █▄▄▄▄▄▄▀   ▀▄▄▄▄▄▀ \n"
+
 render :: KpeduState -> IO ()
 render st = do
   sizes <- getTerminalSize
@@ -13,16 +26,19 @@ render st = do
     Just (h,w) -> do
       clearScreen
       lineNumbers 0 h
-      modeLine h w
-      bufferContent (buffer st)
+      modeLine h w st
+      if tutorial st then tutorialScreen
+        else bufferContent (buffer st)
     Nothing -> return ()
 
-modeLine :: Int -> Int -> IO ()
-modeLine h w = do
+modeLine :: Int -> Int -> KpeduState -> IO ()
+modeLine h w st = do
   setSGR [SetColor Background Dull White]
   setSGR [SetColor Foreground Dull Black]
-  setCursorPosition (h-2) 0
-  let text = "moikka"
+  setCursorPosition (h-lineOffset) 0
+  let text = if cmdMode st
+             then ":\"" ++ command st ++ "\""
+             else "moikka"
       output = text ++ take (w - length text) (repeat ' ')
   putStr output
   setSGR [Reset]
@@ -38,16 +54,26 @@ bufferContent :: Buffer -> IO ()
 bufferContent (Buffer (xs,ys) col) = do
   setCursorPosition 0 0
   forM_ (reverse xs)
-    (\line -> do setCursorColumn 2
+    (\line -> do setCursorColumn lineOffset
                  putStrLn . T.unpack $ line)
   forM_ (ys)
-    (\line -> do setCursorColumn 2
+    (\line -> do setCursorColumn lineOffset
                  putStrLn . T.unpack $ line )
   -- Cursor
   setSGR [SetColor Background Dull White]
-  setCursorPosition (length xs) (col+2)
+  setCursorPosition (length xs) (col+lineOffset)
   putStr " "
   setSGR [Reset]
 
-  print (Buffer (xs,ys) col)
-  --setCursorPosition (col st) (col st + 2)
+  --print (Buffer (xs,ys) col)
+  --setCursorPosition (col st) (col st + lineOffset)
+
+tutorialScreen :: IO ()
+tutorialScreen = do
+  setCursorPosition 1 0
+  forM_ (lines logo)
+    (\line -> do setCursorColumn 5
+                 putStrLn line)
+  putStrLn ""
+  setCursorColumn 3
+  putStr "Welcome to kpedu. Move via hjkl and press x to type commands."

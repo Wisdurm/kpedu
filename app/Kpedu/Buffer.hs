@@ -33,7 +33,7 @@ insertChar buf '\n' =
   in Buffer (ctx, T.empty:xs) r
 insertChar (Buffer (ctx, []) r) c = Buffer (ctx, [T.singleton c]) r
 insertChar (Buffer (ctx, (x:xs)) r) c =
-  Buffer (ctx, ((T.snoc (T.take r x) c) `T.append` T.drop r x) : xs) r
+  Buffer (ctx, ((T.snoc (T.take r x) c) `T.append` T.drop r x) : xs) (r+1)
 
 deleteChar :: Buffer -> Buffer
 deleteChar (Buffer (ctx, []) r) = Buffer (ctx, []) r
