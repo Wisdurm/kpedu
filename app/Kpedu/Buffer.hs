@@ -28,9 +28,10 @@ lineUp (Buffer (ctx, xs) r) =
   Buffer ((drop 1 ctx), (take 1 ctx ++ xs)) r
 
 insertChar :: Buffer -> Char -> Buffer
-insertChar buf '\n' =
-  let (Buffer (ctx, (xs)) r) = lineDown buf
-  in Buffer (ctx, T.empty:xs) r
+insertChar (Buffer (ctx, (x:xs)) r) '\n' =
+  let lineBeg = T.take r x
+      lineEnd = T.drop r x
+  in Buffer (ctx `fuck` lineBeg, lineEnd:xs) 0
 insertChar (Buffer (ctx, []) r) c = Buffer (ctx, [T.singleton c]) r
 insertChar (Buffer (ctx, (x:xs)) r) c =
   Buffer (ctx, ((T.snoc (T.take r x) c) `T.append` T.drop r x) : xs) (r+1)
@@ -38,5 +39,10 @@ insertChar (Buffer (ctx, (x:xs)) r) c =
 deleteChar :: Buffer -> Buffer
 deleteChar (Buffer (ctx, []) r) = Buffer (ctx, []) r
 deleteChar (Buffer (ctx, ("":xs)) r) = Buffer (ctx, xs) r
-deleteChar (Buffer (ctx, (x:xs)) r) =
-  Buffer (ctx, ((T.take r x) `T.append` T.drop (r+1) x) : xs) r
+deleteChar (Buffer (ctx, (x:xs)) r)
+  | r > T.length x && (not . null $ xs) = Buffer (ctx, x `T.append` head xs : tail xs) r
+  | otherwise = Buffer (ctx, ((T.take r x) `T.append` T.drop (r+1) x) : xs) r
+
+fuck :: [Text] -> Text -> [Text]
+fuck (x:xs) y = y : x : xs
+fuck [] y = [y]

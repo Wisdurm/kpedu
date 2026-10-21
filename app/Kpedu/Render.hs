@@ -7,7 +7,7 @@ import Control.Monad
 import qualified Data.Text as T
 
 lineOffset :: Int
-lineOffset = 2
+lineOffset = 3
 
 logo :: String
 logo = "\
@@ -25,43 +25,58 @@ render st = do
   case sizes of
     Just (h,w) -> do
       clearScreen
-      lineNumbers 0 h
+      setCursorPosition 0 0
+      lineNumbers (buffer st) 1 h
       modeLine h w st
       if tutorial st then tutorialScreen
-        else bufferContent (buffer st)
+        else bufferContent (buffer st) (h-2)
     Nothing -> return ()
 
 modeLine :: Int -> Int -> KpeduState -> IO ()
 modeLine h w st = do
   setSGR [SetColor Background Dull White]
   setSGR [SetColor Foreground Dull Black]
-  setCursorPosition (h-lineOffset) 0
+  setCursorPosition (h-2) 0
   let text = if cmdMode st
-             then ":\"" ++ command st ++ "\""
-             else "moikka"
+             then ":\"" ++ (reverse . command $ st) ++ "\""
+             else filePath st
       output = text ++ take (w - length text) (repeat ' ')
   putStr output
   setSGR [Reset]
 
-lineNumbers :: Int -> Int -> IO ()
-lineNumbers n h
-  | n == h = return ()
+lineNumbers :: Buffer -> Int -> Int -> IO ()
+lineNumbers buf n h
+  | n == (h-1) = return ()
   | otherwise = do
-      putStrLn . show $ n
-      lineNumbers (n+1) h
+      let (Buffer (xs, ys) _) = buf
+          ftake = if length xs + length ys < h then 0
+                  else max 0 ((length xs + 1) - (h `div` 2))
+      putStrLn . show $ (n + ftake)
+      lineNumbers buf (n+1) h
 
-bufferContent :: Buffer -> IO ()
-bufferContent (Buffer (xs,ys) col) = do
+bufferContent :: Buffer -> Int -> IO ()
+bufferContent (Buffer (xs,ys) col) h = do
   setCursorPosition 0 0
-  forM_ (reverse xs)
-    (\line -> do setCursorColumn lineOffset
-                 putStrLn . T.unpack $ line)
-  forM_ (ys)
-    (\line -> do setCursorColumn lineOffset
-                 putStrLn . T.unpack $ line )
-  -- Cursor
+  if length xs + length ys < h then do
+    forM_ (reverse xs)
+      (\line -> do setCursorColumn lineOffset
+                   putStrLn . T.unpack $ line)
+    forM_ (ys)
+      (\line -> do setCursorColumn lineOffset
+                   putStrLn . T.unpack $ line )
+    -- Cursor
+    setCursorPosition (length xs) (col+lineOffset)
+    else do
+    let ftake = min (h `div` 2) (length xs)
+    forM_ (reverse . take (h `div` 2) $ xs)
+      (\line -> do setCursorColumn lineOffset
+                   putStrLn . T.unpack $ line)
+    forM_ (take (h - ftake)  ys)
+      (\line -> do setCursorColumn lineOffset
+                   putStrLn . T.unpack $ line )
+    -- Cursor
+    setCursorPosition ftake (col+lineOffset)
   setSGR [SetColor Background Dull White]
-  setCursorPosition (length xs) (col+lineOffset)
   putStr " "
   setSGR [Reset]
 

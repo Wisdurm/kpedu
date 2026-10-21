@@ -3,19 +3,26 @@ module Main where
 import Kpedu.Render
 import Kpedu.Input
 import Kpedu.State
+import Kpedu.Utils as Utils (openFile)
+import System.Environment
 import System.Console.ANSI
 import System.IO
 import Control.Exception
 
 main :: IO ()
 main = do
+  args <- getArgs
   stdoutSupportsANSI <- hNowSupportsANSI stdout
   if stdoutSupportsANSI then do
     setTitle "Kpedu"
+    disableLineWrap
     hideCursor
     useAlternateScreenBuffer
-    loop defaultState `catch`
-      (\(_ :: SomeException) -> useNormalScreenBuffer >> showCursor)
+    st <- case args of [] -> return defaultState
+                       (file:_) -> Utils.openFile defaultState file
+    loop st `catch`
+      (\(_ :: SomeException) -> useNormalScreenBuffer >> showCursor >>
+                                enableLineWrap)
     else
     putStrLn "Cout does not support ANSI escape codes."
 
