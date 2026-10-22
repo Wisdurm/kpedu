@@ -14,7 +14,9 @@ initBuffer :: String -> Buffer
 initBuffer t = Buffer ([], T.lines . T.pack $ t) 0
 
 colForward :: Buffer -> Buffer
-colForward (Buffer p r) = Buffer p (r+1)
+colForward (Buffer (xs,ys) r) = let len = case ys of (y:_) -> T.length y
+                                                     [] -> 0
+                                in Buffer (xs,ys) (min (r+1) len)
 
 colBack :: Buffer -> Buffer
 colBack (Buffer p r) = Buffer p (max 0 (r-1))
@@ -43,6 +45,6 @@ deleteChar (Buffer (ctx, (x:xs)) r)
   | r > T.length x && (not . null $ xs) = Buffer (ctx, x `T.append` head xs : tail xs) r
   | otherwise = Buffer (ctx, ((T.take r x) `T.append` T.drop (r+1) x) : xs) r
 
-fuck :: [Text] -> Text -> [Text]
+fuck :: [a] -> a -> [a]
 fuck (x:xs) y = y : x : xs
 fuck [] y = [y]

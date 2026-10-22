@@ -1,0 +1,8 @@
+# Kool Paragraph Editor Upon Utilities
+
+Kool Paragraph Editor Upon Utilities (or kpedu), is a very simple
+text editor written in Haskell. It does not boast many features
+currently, but I do have interest in expanding it in the future.
+
+For now it is usable enough that I was able to create this README
+in the editor.
