@@ -103,9 +103,9 @@ tutorialScreen = do
                  putStrLn line)
   putStrLn ""
   setCursorColumn 3
-  putStr "Welcome to kpedu. Move via C-fbnp and press C-x to type commands."
+  putStrLn "Welcome to kpedu. Move via C-fbnp and press C-x to type commands."
   setCursorColumn 3
-  putStr "You should probably be using Emacs."
+  putStrLn "You should probably be using Emacs."
 
 formatLine :: String -> String
 formatLine line = go line 0
