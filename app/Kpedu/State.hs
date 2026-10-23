@@ -2,19 +2,28 @@ module Kpedu.State where
 
 import Kpedu.Buffer
 
-data KpeduState = KpeduState {  buffer :: Buffer
+type FSZipper = ([FilePath],[FilePath])
+data BufferType = TextFile Buffer | Folder FSZipper | Tutorial
+
+data KpeduState = KpeduState {  bufferType :: BufferType
                              ,  filePath :: String
                              ,  unsaved :: Bool
                              ,  command :: String
                              ,  cmdMode :: Bool
-                             ,  tutorial :: Bool
                              }
 
 defaultState :: KpeduState
-defaultState = KpeduState {  buffer = initBuffer "Hello\nWorld!"
+defaultState = KpeduState {  bufferType = Tutorial
                           ,  filePath = ""
                           ,  unsaved = False
                           ,  command = ""
                           ,  cmdMode = False
-                          ,  tutorial = True
                           }
+
+fszUp :: FSZipper -> FSZipper
+fszUp (x:xs,ys) = ((xs), x:ys)
+fszUp ([],ys) = ([], ys)
+
+fszDown :: FSZipper -> FSZipper
+fszDown (xs,y:ys) = ((y:xs), ys)
+fszDown (xs,[]) = (xs, [])

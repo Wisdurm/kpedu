@@ -75,6 +75,7 @@ executable kpedu
                     , text
                     , ansi-terminal ^>=1.1
                     , directory ^>=1.3
+                    , filepath ^>=1.5
 
     -- Directories containing source files.
     hs-source-dirs:   app

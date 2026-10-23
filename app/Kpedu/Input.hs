@@ -4,6 +4,7 @@ import Kpedu.State
 import Kpedu.Buffer
 import Kpedu.Utils
 import System.Exit
+import System.FilePath
 import System.Directory
 import Data.List (isPrefixOf)
 
@@ -27,18 +28,30 @@ input st = do
       '\DEL' -> return st { command = drop 1 (command st) }
       _ -> return st { command = input : (command st) }
     else
-    case input of
-      '\CAN' -> return st { cmdMode = True }
-      '\DEL' -> return st { buffer = deleteCharBack (buffer st) }
-      '\ESC' -> return st { buffer = deleteChar (buffer st) }
-      '\EOT' -> return st { buffer = deleteChar (buffer st) }
-      '\STX' -> return st { buffer = colBack (buffer st) }
-      '\ACK' -> return st { buffer = colForward (buffer st) }
-      '\DLE' -> return st { buffer = lineUp (buffer st) }
-      '\SO' -> return st { buffer = lineDown (buffer st) }
-      _ -> return st { buffer = insertChar (buffer st) input
-                     , unsaved = True
-                     , tutorial = False }
+    case bufferType st of
+      TextFile buffer ->
+        case input of
+          '\CAN' -> return st { cmdMode = True }
+          '\DEL' -> return st { bufferType = TextFile $ deleteCharBack buffer }
+          '\ESC' -> return st { bufferType = TextFile $ deleteChar buffer }
+          '\EOT' -> return st { bufferType = TextFile $ deleteChar buffer }
+          '\STX' -> return st { bufferType = TextFile $ colBack buffer }
+          '\ACK' -> return st { bufferType = TextFile $ colForward buffer }
+          '\DLE' -> return st { bufferType = TextFile $ lineUp buffer }
+          '\SO' -> return st { bufferType = TextFile $ lineDown buffer }
+          _ -> return st { bufferType = TextFile $ insertChar buffer input
+                         , unsaved = True }
+      Tutorial ->
+        case input of
+          '\CAN' -> return st { cmdMode = True }
+          _ -> return st
+      Folder files ->
+        case input of
+          '\CAN' -> return st { cmdMode = True }
+          '\DLE' -> return st { bufferType = Folder $ fszUp files }
+          '\SO' -> return st { bufferType = Folder $ fszDown files }
+          '\n' -> openPath st (head . snd $ files)
+          _ -> return st
 
 runCommand :: KpeduState -> IO KpeduState
 runCommand st = do
@@ -46,13 +59,13 @@ runCommand st = do
             "fault" -> return undefined
             "q" -> exitWith ExitSuccess
             "quit" -> exitWith ExitSuccess
-            "tutorial" -> return st { tutorial = True }
+            "tutorial" -> return st { bufferType = Tutorial }
             'w':' ':file -> saveFilePath st file
             'w':'r':'i':'t':'e':' ':file -> saveFilePath st file
             "w" -> saveFile st
             "write" -> saveFile st
-            'o':' ':file -> openFile st file
-            'o':'p':'e':'n':' ':file -> openFile st file
+            'o':' ':file -> openPath st file
+            'o':'p':'e':'n':' ':file -> openPath st file
             _ -> return st
         )
   return st{ cmdMode = False, command = "" }
@@ -72,8 +85,8 @@ fillCommand st = do
 
 fillPath :: FilePath -> IO FilePath
 fillPath path = do
-  let dir = reverse (dropWhile (/='/') (reverse path))
-      file = reverse (takeWhile (/='/') (reverse path))
+  let dir = dropFileName path
+      file = takeFileName path
 
   p <- doesPathExist dir
   suggestions <- if p then listDirectory dir

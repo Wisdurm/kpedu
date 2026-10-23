@@ -3,7 +3,7 @@ module Main where
 import Kpedu.Render
 import Kpedu.Input
 import Kpedu.State
-import Kpedu.Utils as Utils (openFile)
+import Kpedu.Utils as Utils (openPath)
 import System.Environment
 import System.Console.ANSI
 import System.IO
@@ -19,7 +19,7 @@ main = do
     hideCursor
     useAlternateScreenBuffer
     st <- case args of [] -> return defaultState
-                       (file:_) -> Utils.openFile defaultState file
+                       (file:_) -> Utils.openPath defaultState file
     loop st `catch`
       (\(_ :: SomeException) -> useNormalScreenBuffer >> showCursor >>
                                 enableLineWrap)

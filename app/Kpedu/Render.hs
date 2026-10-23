@@ -31,10 +31,13 @@ render st = do
     Just (h,w) -> do
       clearScreen
       setCursorPosition 0 0
-      lineNumbers (buffer st) 1 h
+      case bufferType st of
+        TextFile content -> do
+          lineNumbers content 1 h
+          bufferContent content (h-2)
+        Tutorial -> tutorialScreen
+        Folder files -> folderContent files (h-2)
       modeLine h w st
-      if tutorial st then tutorialScreen
-        else bufferContent (buffer st) (h-2)
     Nothing -> return ()
 
 modeLine :: Int -> Int -> KpeduState -> IO ()
@@ -94,18 +97,6 @@ bufferContent (Buffer (xs,ys) col) h = do
 
   --print (Buffer (xs,ys) col)
 
-tutorialScreen :: IO ()
-tutorialScreen = do
-  setCursorPosition 1 0
-  forM_ (lines logo)
-    (\line -> do setCursorColumn 5
-                 putStrLn line)
-  putStrLn ""
-  setCursorColumn 3
-  putStrLn "Welcome to kpedu. Move via C-fbnp and press C-x to type commands."
-  setCursorColumn 3
-  putStrLn "You should probably be using Emacs."
-
 formatLine :: String -> String
 formatLine line = go line 0
   where go [] len = []
@@ -126,6 +117,37 @@ cWidth '\t' l = tabWidth - (l `mod` tabWidth)
 cWidth c _
   | isPrint c = charWidth c
   | otherwise = 1
+
+tutorialScreen :: IO ()
+tutorialScreen = do
+  setCursorPosition 1 0
+  forM_ (lines logo)
+    (\line -> do setCursorColumn 5
+                 putStrLn line)
+  putStrLn ""
+  let lines = ["Welcome to kpedu. Move via C-fbnp and press C-x to type commands."
+              ,"You should probably be using Emacs."
+              ,"Some useful commands might be:"
+              ,"\topen PATH - To open files and folders"
+              ,"\twrite (PATH) - To save files"
+              ,"\tquit - To exit"]
+  forM_ lines (\line -> setCursorColumn 1 >> putStrLn line)
+
+folderContent :: FSZipper -> Int -> IO ()
+folderContent (xs, ys) h = do
+  if length xs + length ys < h then do
+    forM_ (reverse xs) putStrLn
+    setSGR [SetColor Background Dull White]
+    putStr " "
+    setSGR [Reset]
+    forM_ (ys) putStrLn
+    else do
+    let ftake = min (h `div` 2) (length xs)
+    forM_ (reverse . take (h `div` 2) $ xs) putStrLn
+    setSGR [SetColor Background Dull White]
+    putStr " "
+    setSGR [Reset]
+    forM_ (take (h - ftake) ys) putStrLn
 
 -- | Get the designated render width of a character: 0 for a combining
 -- character, 1 for a regular character, 2 for a wide character.
