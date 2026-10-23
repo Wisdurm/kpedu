@@ -36,6 +36,8 @@ runCommand st = do
             "q" -> exitWith ExitSuccess
             "quit" -> exitWith ExitSuccess
             "tutorial" -> return st { tutorial = True }
+            'w':' ':file -> saveFilePath st file
+            'w':'r':'i':'t':'e':' ':file -> saveFilePath st file
             "w" -> saveFile st
             "write" -> saveFile st
             'o':' ':file -> openFile st file

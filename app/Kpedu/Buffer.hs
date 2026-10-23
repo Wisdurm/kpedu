@@ -23,11 +23,15 @@ colBack (Buffer p r) = Buffer p (max 0 (r-1))
 
 lineDown :: Buffer -> Buffer
 lineDown (Buffer (ctx, xs) r) =
-  Buffer ((take 1 xs ++ ctx), (drop 1 xs)) r
+  let len = case drop 1 xs of (x:_) -> T.length x
+                              [] -> 0
+  in Buffer ((take 1 xs ++ ctx), (drop 1 xs)) (min r len)
 
 lineUp :: Buffer -> Buffer
 lineUp (Buffer (ctx, xs) r) =
-  Buffer ((drop 1 ctx), (take 1 ctx ++ xs)) r
+  let len = case take 1 ctx of (x:_) -> T.length x
+                               [] -> 0
+  in Buffer ((drop 1 ctx), (take 1 ctx ++ xs)) (min r len)
 
 insertChar :: Buffer -> Char -> Buffer
 insertChar (Buffer (ctx, (x:xs)) r) '\n' =

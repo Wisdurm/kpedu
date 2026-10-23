@@ -24,3 +24,12 @@ saveFile st = do
     T.writeFile path content
     return st { unsaved = False }
     else return st
+
+saveFilePath :: KpeduState -> FilePath -> IO KpeduState
+saveFilePath st path = do
+  let (Buffer (xs,ys) _) = buffer st
+      content = T.unlines (reverse xs ++ ys)
+  if not . null $ path then do
+    T.writeFile path content
+    return st { unsaved = False, filePath = path }
+    else return st
