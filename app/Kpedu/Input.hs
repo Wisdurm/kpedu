@@ -4,6 +4,16 @@ import Kpedu.State
 import Kpedu.Buffer
 import Kpedu.Utils
 import System.Exit
+import System.Directory
+import Data.List (isPrefixOf)
+
+-- | Commands which can be autofilled
+commands :: [String]
+commands = ["open"
+           ,"fault"
+           ,"quit"
+           ,"tutorial"
+           ,"write"]
 
 input :: KpeduState -> IO KpeduState
 input st = do
@@ -11,7 +21,7 @@ input st = do
   if cmdMode st
     then
     case input of
-      '\t' -> return st { command = "moi" }
+      '\t' -> fillCommand st
       '\n' -> runCommand st
       '\ESC' -> return st { command = "", cmdMode = False}
       '\DEL' -> return st { command = drop 1 (command st) }
@@ -19,7 +29,8 @@ input st = do
     else
     case input of
       '\CAN' -> return st { cmdMode = True }
-      '\DEL' -> return st { buffer = deleteChar (buffer st) }
+      '\DEL' -> return st { buffer = deleteCharBack (buffer st) }
+      '\ESC' -> return st { buffer = deleteChar (buffer st) }
       '\EOT' -> return st { buffer = deleteChar (buffer st) }
       '\STX' -> return st { buffer = colBack (buffer st) }
       '\ACK' -> return st { buffer = colForward (buffer st) }
@@ -45,3 +56,41 @@ runCommand st = do
             _ -> return st
         )
   return st{ cmdMode = False, command = "" }
+
+fillCommand :: KpeduState -> IO KpeduState
+fillCommand st = do
+  case reverse . command $ st of
+    'o':' ':file -> do
+      p <- fillPath file
+      return st { command = reverse ('o':' ' : p) }
+    'o':'p':'e':'n':' ':file -> do
+      p <- fillPath file
+      return st { command = reverse ("open " ++ p) }
+    com -> case filter (isPrefixOf com) commands of
+             [] -> return st
+             (x:_) -> return st { command = reverse x }
+
+fillPath :: FilePath -> IO FilePath
+fillPath path = do
+  let dir = reverse (dropWhile (/='/') (reverse path))
+      file = reverse (takeWhile (/='/') (reverse path))
+
+  p <- doesPathExist dir
+  suggestions <- if p then listDirectory dir
+                 else do d <- getCurrentDirectory
+                         listDirectory d
+  if null suggestions then return path
+    else
+    if null file then return . (dir++) . head $ suggestions
+    else do
+      already <- doesPathExist path
+      if already then
+        -- If already have valid path, try other option
+        -- (should probably loop but that requires state so eww)
+        case filter (/=file) suggestions of
+          [] -> return path
+          (x:_) -> return . (dir++) $ x
+        else
+        let fill = filter (isPrefixOf file) suggestions
+        in if null fill then return path
+           else return . (dir++) . head $ fill

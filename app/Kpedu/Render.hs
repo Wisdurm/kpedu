@@ -93,7 +93,6 @@ bufferContent (Buffer (xs,ys) col) h = do
   setSGR [Reset]
 
   --print (Buffer (xs,ys) col)
-  --setCursorPosition (col st) (col st + lineOffset)
 
 tutorialScreen :: IO ()
 tutorialScreen = do
