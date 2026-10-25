@@ -32,13 +32,22 @@ input st = do
       TextFile buffer ->
         case input of
           '\CAN' -> return st { cmdMode = True }
-          '\DEL' -> return st { bufferType = TextFile $ deleteCharBack buffer }
-          '\ESC' -> return st { bufferType = TextFile $ deleteChar buffer }
-          '\EOT' -> return st { bufferType = TextFile $ deleteChar buffer }
+          '\DEL' -> return st { bufferType = TextFile $ deleteCharBack buffer
+                              , unsaved = True }
+          '\ESC' -> return st { bufferType = TextFile $ deleteChar buffer
+                              , unsaved = True }
+          '\EOT' -> return st { bufferType = TextFile $ deleteChar buffer
+                              , unsaved = True }
           '\STX' -> return st { bufferType = TextFile $ colBack buffer }
           '\ACK' -> return st { bufferType = TextFile $ colForward buffer }
           '\DLE' -> return st { bufferType = TextFile $ lineUp buffer }
           '\SO' -> return st { bufferType = TextFile $ lineDown buffer }
+          '\SOH' -> return st { bufferType = TextFile $ lineBeg buffer }
+          '\ENQ' -> return st { bufferType = TextFile $ lineEnd buffer }
+          '\ETB' -> return st { bufferType = TextFile $ top buffer }
+          '\DC2' -> return st { bufferType = TextFile $ bottom buffer }
+          '\a' -> return st { bufferType = TextFile $ iterate lineUp buffer !! 30 }
+          '\SYN' -> return st { bufferType = TextFile $ iterate lineDown buffer !! 30 }
           _ -> return st { bufferType = TextFile $ insertChar buffer input
                          , unsaved = True }
       Tutorial ->
@@ -50,15 +59,23 @@ input st = do
           '\CAN' -> return st { cmdMode = True }
           '\DLE' -> return st { bufferType = Folder $ fszUp files }
           '\SO' -> return st { bufferType = Folder $ fszDown files }
-          '\n' -> openPath st (head . snd $ files)
+          '\n' -> case snd $ files of
+                    (x:_) -> openPath st x
+                    [] -> openPath st ""
           _ -> return st
 
 runCommand :: KpeduState -> IO KpeduState
 runCommand st = do
   st <- (case reverse . command $ st of
             "fault" -> return undefined
-            "q" -> exitWith ExitSuccess
-            "quit" -> exitWith ExitSuccess
+            "!q" -> exitWith ExitSuccess
+            "!quit" -> exitWith ExitSuccess
+            "q" -> if unsaved st
+              then return st { notice = "File is unsaved. Force exit with !q" }
+              else exitWith ExitSuccess
+            "quit" -> if unsaved st
+              then return st { notice = "File is unsaved. Force exit with !quit" }
+              else exitWith ExitSuccess
             "tutorial" -> return st { bufferType = Tutorial }
             'w':' ':file -> saveFilePath st file
             'w':'r':'i':'t':'e':' ':file -> saveFilePath st file

@@ -34,7 +34,7 @@ render st = do
       case bufferType st of
         TextFile content -> do
           lineNumbers content 1 h
-          bufferContent content (h-2)
+          bufferContent content (h-2) (w - lineOffset)
         Tutorial -> tutorialScreen
         Folder files -> folderContent files (h-2)
       modeLine h w st
@@ -47,10 +47,13 @@ modeLine h w st = do
   setCursorPosition (h-2) 0
   let fileName = case filePath st of "" -> "No file open"
                                      _ -> filePath st
-      text = if cmdMode st
-             then ":\"" ++ (reverse . command $ st) ++ "\""
-             else if unsaved st then "*" ++ fileName
-                  else fileName
+      content = if cmdMode st
+                then ":\"" ++ (reverse . command $ st) ++ "\""
+                else if unsaved st then "*" ++ fileName
+                     else fileName
+      text = case notice st of
+        [] -> content
+        msg -> content ++ " - " ++ notice st
       output = text ++ take (w - length text) (repeat ' ')
   putStr output
   setSGR [Reset]
@@ -67,28 +70,31 @@ lineNumbers buf n h
         else putStrLn . show $ (n + ftake)
       lineNumbers buf (n+1) h
 
-bufferContent :: Buffer -> Int -> IO ()
-bufferContent (Buffer (xs,ys) col) h = do
+bufferContent :: Buffer -> Int -> Col -> IO ()
+bufferContent (Buffer (xs,ys) col) h w = do
   setCursorPosition 0 0
-  let cursorLine = case ys of [] -> T.empty
-                              (y:_) -> y
+  let dropBeg = if col >= w then col - w + 1
+                else 0
+      cursorLine = case ys of [] -> T.empty
+                              (y:_) -> T.drop dropBeg $ y
+
   if length xs + length ys < h then do
     forM_ (reverse xs)
       (\line -> do setCursorColumn lineOffset
-                   putStrLn . formatLine . T.unpack $ line)
+                   putStrLn . formatLine . T.unpack . T.take w . T.drop dropBeg $ line)
     forM_ (ys)
       (\line -> do setCursorColumn lineOffset
-                   putStrLn . formatLine . T.unpack  $ line )
+                   putStrLn . formatLine . T.unpack . T.take w . T.drop dropBeg $ line )
     -- Cursor
     setCursorPosition (length xs) ((formatPos cursorLine col) + lineOffset)
     else do
     let ftake = min (h `div` 2) (length xs)
     forM_ (reverse . take (h `div` 2) $ xs)
       (\line -> do setCursorColumn lineOffset
-                   putStrLn . formatLine . T.unpack $ line)
+                   putStrLn . formatLine . T.unpack . T.take w . T.drop dropBeg $ line)
     forM_ (take (h - ftake)  ys)
       (\line -> do setCursorColumn lineOffset
-                   putStrLn . formatLine . T.unpack $ line )
+                   putStrLn . formatLine . T.unpack . T.take w . T.drop dropBeg $ line )
     -- Cursor
     setCursorPosition ftake ((formatPos cursorLine col) + lineOffset)
   setSGR [SetColor Background Dull White]

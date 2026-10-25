@@ -10,6 +10,7 @@ data KpeduState = KpeduState {  bufferType :: BufferType
                              ,  unsaved :: Bool
                              ,  command :: String
                              ,  cmdMode :: Bool
+                             ,  notice :: String
                              }
 
 defaultState :: KpeduState
@@ -18,6 +19,7 @@ defaultState = KpeduState {  bufferType = Tutorial
                           ,  unsaved = False
                           ,  command = ""
                           ,  cmdMode = False
+                          ,  notice = "Welcome"
                           }
 
 fszUp :: FSZipper -> FSZipper

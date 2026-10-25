@@ -25,13 +25,26 @@ lineDown :: Buffer -> Buffer
 lineDown (Buffer (ctx, xs) r) =
   let len = case drop 1 xs of (x:_) -> T.length x
                               [] -> 0
-  in Buffer ((take 1 xs ++ ctx), (drop 1 xs)) (min r len)
+  in Buffer ((addHead xs ctx), (drop 1 xs)) (min r len)
 
 lineUp :: Buffer -> Buffer
 lineUp (Buffer (ctx, xs) r) =
   let len = case take 1 ctx of (x:_) -> T.length x
                                [] -> 0
-  in Buffer ((drop 1 ctx), (take 1 ctx ++ xs)) (min r len)
+  in Buffer ((drop 1 ctx), (addHead ctx xs)) (min r len)
+
+lineBeg :: Buffer -> Buffer
+lineBeg (Buffer p _) = Buffer p 0
+
+lineEnd :: Buffer -> Buffer
+lineEnd (Buffer (ctx, (x:xs)) _) = Buffer (ctx, (x:xs)) (T.length x)
+lineEnd (Buffer p r) = Buffer p r
+
+bottom :: Buffer -> Buffer
+bottom (Buffer (ctx, xs) _) = Buffer (reverse xs ++ ctx, []) 0
+
+top :: Buffer -> Buffer
+top (Buffer (ctx, xs) _) = Buffer ([], reverse ctx ++ xs) 0
 
 insertChar :: Buffer -> Char -> Buffer
 insertChar (Buffer (ctx, (x:xs)) r) '\n' =
@@ -58,3 +71,7 @@ deleteCharBack (Buffer ((c:ctx), (x:xs)) 0) =
   in Buffer (ctx2, (x2:xs2)) (T.length c)
 deleteCharBack (Buffer (ctx, (x:xs)) r) =
   Buffer (ctx, ((T.take (r-1) x) `T.append` T.drop r x) : xs) (max 0 (r-1))
+
+addHead :: [a] -> [a] -> [a]
+addHead [] ys = ys
+addHead (x:_) ys = x:ys
