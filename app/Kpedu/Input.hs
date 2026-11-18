@@ -6,7 +6,7 @@ import Kpedu.Utils
 import System.Exit
 import System.FilePath
 import System.Directory
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, elemIndex)
 
 -- | Commands which can be autofilled
 commands :: [String]
@@ -117,9 +117,8 @@ fillPath path = do
       if already then
         -- If already have valid path, try other option
         -- (should probably loop but that requires state so eww)
-        case filter (/=file) suggestions of
-          [] -> return path
-          (x:_) -> return . (dir++) $ x
+        let (Just i) = elemIndex file suggestions
+        in return . (dir++) $ suggestions !! ((i+1) `mod` (length suggestions))
         else
         let fill = filter (isPrefixOf file) suggestions
         in if null fill then return path
