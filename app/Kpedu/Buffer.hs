@@ -72,6 +72,11 @@ deleteCharBack (Buffer ((c:ctx), (x:xs)) 0) =
 deleteCharBack (Buffer (ctx, (x:xs)) r) =
   Buffer (ctx, ((T.take (r-1) x) `T.append` T.drop r x) : xs) (max 0 (r-1))
 
+deleteLine :: Buffer -> Buffer
+deleteLine (Buffer (ctx, ("":xs)) r) = deleteChar (Buffer (ctx, ("":xs)) r)
+deleteLine (Buffer (ctx, (x:xs)) r) = Buffer (ctx, (T.take r x) : xs) r
+deleteLine (Buffer ([], []) r) = Buffer ([],[]) r
+
 addHead :: [a] -> [a] -> [a]
 addHead [] ys = ys
 addHead (x:_) ys = x:ys

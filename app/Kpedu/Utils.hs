@@ -23,6 +23,7 @@ openPath st path = do
         setCurrentDirectory path
         return st { bufferType = Folder ([], content)
                   , filePath = fullDir
+                  , unsaved = False
                   , notice = ""}
     else do
     b <- doesFileExist path

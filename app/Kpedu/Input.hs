@@ -38,6 +38,8 @@ input st = do
                               , unsaved = True }
           '\EOT' -> return st { bufferType = TextFile $ deleteChar buffer
                               , unsaved = True }
+          '\v' -> return st { bufferType = TextFile $ deleteLine buffer
+                              , unsaved = True }
           '\STX' -> return st { bufferType = TextFile $ colBack buffer }
           '\ACK' -> return st { bufferType = TextFile $ colForward buffer }
           '\DLE' -> return st { bufferType = TextFile $ lineUp buffer }
@@ -81,8 +83,14 @@ runCommand st = do
             'w':'r':'i':'t':'e':' ':file -> saveFilePath st file
             "w" -> saveFile st
             "write" -> saveFile st
-            'o':' ':file -> openPath st file
-            'o':'p':'e':'n':' ':file -> openPath st file
+            '!':'o':' ':file -> openPath st file
+            '!':'o':'p':'e':'n':' ':file -> openPath st file
+            'o':' ':file -> if unsaved st
+              then return st { notice = "File is unsaved. Force open with !o" }
+              else openPath st file
+            'o':'p':'e':'n':' ':file -> if unsaved st
+              then return st { notice = "File is unsaved. Force open with !open" }
+              else openPath st file
             _ -> return st
         )
   return st{ cmdMode = False, command = "" }
@@ -98,7 +106,12 @@ fillCommand st = do
       return st { command = reverse ("open " ++ p) }
     com -> case filter (isPrefixOf com) commands of
              [] -> return st
-             (x:_) -> return st { command = reverse x }
+             (x:_) -> if com == x
+                      then let (Just i) = elemIndex com commands
+                           in return st { command = reverse
+                                          (commands !! ((i+1) `mod` (length commands)))
+                                        }
+                      else return st { command = reverse x }
 
 fillPath :: FilePath -> IO FilePath
 fillPath path = do
@@ -115,11 +128,10 @@ fillPath path = do
     else do
       already <- doesPathExist path
       if already then
-        -- If already have valid path, try other option
-        -- (should probably loop but that requires state so eww)
         let (Just i) = elemIndex file suggestions
         in return . (dir++) $ suggestions !! ((i+1) `mod` (length suggestions))
         else
         let fill = filter (isPrefixOf file) suggestions
-        in if null fill then return path
+        in if null fill
+           then return path
            else return . (dir++) . head $ fill
